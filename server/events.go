@@ -17,27 +17,27 @@ type NetworkEvent interface {
 	Type() NetworkEventType
 }
 
-//ClientConnectionEvent represents a client connection
+// ClientConnectionEvent represents a client connection
 type ClientConnectionEvent struct {
 	client *Client
 }
 
-//Type satisfies the NetworkEvent interface
+// Type satisfies the NetworkEvent interface
 func (c ClientConnectionEvent) Type() NetworkEventType {
 	return EventClientConnect
 }
 
-//ClientDisconnectionEvent represents a client connection
+// ClientDisconnectionEvent represents a client connection
 type ClientDisconnectionEvent struct {
 	clientID string
 }
 
-//Type satisfies the NetworkEvent interface
+// Type satisfies the NetworkEvent interface
 func (c ClientDisconnectionEvent) Type() NetworkEventType {
 	return EventClientDisconnect
 }
 
-//ClientMessageEvent represents a client connection
+// ClientMessageEvent represents a client connection
 type ClientMessageEvent struct {
 	ClientID,
 	Topic,
@@ -45,7 +45,7 @@ type ClientMessageEvent struct {
 	Message string
 }
 
-//Type satisfies the NetworkEvent interface
+// Type satisfies the NetworkEvent interface
 func (c ClientMessageEvent) Type() NetworkEventType {
 	return EventClientMessage
 }

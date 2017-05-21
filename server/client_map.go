@@ -5,6 +5,12 @@ import "math"
 // RegionArea is the area (in coordinate degrees)
 const RegionArea = 1.0
 
+// EventBufferSize limits the number of events that each network can hold.
+// Theoretically in the maximum load scenario (with (180*180) networks) our
+// max buffered events will be (180*180*256) = ~8.3 Million events which amounts
+// to 67.2 Million Bytes at a minimum. This is reasonably manageable even in an unlikely case
+const EventBufferSize = 1 << 8
+
 // Client is the representation of chat clients
 type Client struct {
 	ID string
@@ -26,7 +32,28 @@ type ClientNetwork struct {
 	allRegions []*clientRegion
 	latRange   [2]float64
 	longRange  [2]float64
-	eventChan  chan interface{}
+	eventChan  chan NetworkEvent
+}
+
+// SendEvent is a convenience method for passing off an event to a network
+func (c *ClientNetwork) SendEvent(n NetworkEvent) {
+	c.eventChan <- n
+}
+
+// To avoid the use of mux's use a channel to shuttle events into the network
+// This way we can perform operations without having to use locks
+func (c *ClientNetwork) waitForEvents() {
+	for {
+		event := <-c.eventChan
+		switch t := event.Type(); t {
+		case EventClientConnect:
+			c.AddClient(event.(ClientConnectionEvent).client)
+		case EventClientDisconnect:
+			break
+		case EventClientMessage:
+			break
+		}
+	}
 }
 
 // AddClient adds a client to the network in the appropriate region
@@ -105,7 +132,9 @@ func NewClientNetwork(root *clientRegion) (network *ClientNetwork) {
 	network.latRange = [2]float64{root.Lat, root.Lat + RegionArea}
 	network.longRange = [2]float64{root.Long, root.Long + RegionArea}
 
-	network.eventChan = make(chan interface{})
+	network.eventChan = make(chan NetworkEvent, EventBufferSize)
+
+	go network.waitForEvents()
 
 	return
 }
