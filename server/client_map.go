@@ -1,9 +1,6 @@
 package server
 
-import (
-	"math"
-	"sync"
-)
+import "math"
 
 // RegionArea is the area (in coordinate degrees)
 const RegionArea = 1.0
@@ -25,11 +22,11 @@ func NewClient(lat, long float64) (client *Client) {
 
 //ClientNetwork is the representation of the Network of all client regions
 type ClientNetwork struct {
-	root            *clientRegion
-	allRegions      []*clientRegion
-	latRange        [2]float64
-	longRange       [2]float64
-	modificationMux *sync.Mutex
+	root       *clientRegion
+	allRegions []*clientRegion
+	latRange   [2]float64
+	longRange  [2]float64
+	eventChan  chan interface{}
 }
 
 // AddClient adds a client to the network in the appropriate region
@@ -108,7 +105,8 @@ func NewClientNetwork(root *clientRegion) (network *ClientNetwork) {
 	network.latRange = [2]float64{root.Lat, root.Lat + RegionArea}
 	network.longRange = [2]float64{root.Long, root.Long + RegionArea}
 
-	network.modificationMux = new(sync.Mutex)
+	network.eventChan = make(chan interface{})
+
 	return
 }
 
