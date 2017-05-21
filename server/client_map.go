@@ -93,6 +93,9 @@ func (c *ClientNetwork) AddClient(client *Client) (connected bool) {
 			r.Left = newRegion
 		}
 	}
+
+	// Append the region to the region array
+	c.allRegions = append(c.allRegions, newRegion)
 	return
 }
 
