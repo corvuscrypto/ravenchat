@@ -15,6 +15,14 @@ type Client struct {
 	Long float64
 }
 
+//NewClient creates a new client and returns its reference
+func NewClient(lat, long float64) (client *Client) {
+	client = new(Client)
+	client.Lat = lat
+	client.Long = long
+	return
+}
+
 //ClientNetwork is the representation of the Network of all client regions
 type ClientNetwork struct {
 	root            *clientRegion
@@ -36,23 +44,24 @@ func (c *ClientNetwork) AddClient(client *Client) (connected bool) {
 	// 3: Right
 	var possibleRegionConnects = [4]*clientRegion{nil, nil, nil, nil}
 	for _, region := range c.allRegions {
-		if region.lat == lat && region.long == long {
+		if region.Lat == lat && region.Long == long {
 			region.AddClient(client)
-			break
+			connected = true
+			return
 		}
-		if (region.lat-lat) == RegionArea && (region.long-long) == 0 {
+		if (region.Lat-lat) == RegionArea && (region.Long-long) == 0 {
 			possibleRegionConnects[0] = region
 			connected = true
 		}
-		if (region.lat-lat) == -RegionArea && (region.long-long) == 0 {
+		if (region.Lat-lat) == -RegionArea && (region.Long-long) == 0 {
 			possibleRegionConnects[3] = region
 			connected = true
 		}
-		if (region.lat-lat) == 0 && (region.long-long) == -RegionArea {
+		if (region.Lat-lat) == 0 && (region.Long-long) == -RegionArea {
 			possibleRegionConnects[1] = region
 			connected = true
 		}
-		if (region.lat-lat) == 0 && (region.long-long) == RegionArea {
+		if (region.Lat-lat) == 0 && (region.Long-long) == RegionArea {
 			possibleRegionConnects[3] = region
 			connected = true
 		}
@@ -62,7 +71,7 @@ func (c *ClientNetwork) AddClient(client *Client) (connected bool) {
 		return
 	}
 
-	newRegion := newClientRegion()
+	newRegion := newClientRegion(client.Lat, client.Long)
 	newRegion.AddClient(client)
 
 	for i, r := range possibleRegionConnects {
@@ -89,11 +98,12 @@ func (c *ClientNetwork) AddClient(client *Client) (connected bool) {
 
 // NewClientNetwork creates a new network of client regions
 func NewClientNetwork(root *clientRegion) (network *ClientNetwork) {
+	network = new(ClientNetwork)
 	network.root = root
 	network.allRegions = []*clientRegion{root}
 
-	network.latRange = [2]float64{root.lat, root.lat + RegionArea}
-	network.longRange = [2]float64{root.long, root.long + RegionArea}
+	network.latRange = [2]float64{root.Lat, root.Lat + RegionArea}
+	network.longRange = [2]float64{root.Long, root.Long + RegionArea}
 
 	network.modificationMux = new(sync.Mutex)
 	return
@@ -107,8 +117,8 @@ type clientRegion struct {
 	clients map[string]*Client
 	isRoot,
 	visited bool
-	lat,
-	long float64
+	Lat,
+	Long float64
 }
 
 func (c *clientRegion) isConnectedToRoot(previousConnection bool) bool {
@@ -140,7 +150,7 @@ func (c *clientRegion) findClientRegion(lat, long float64) *clientRegion {
 		return nil
 	}
 	c.visited = true
-	if c.lat == lat && c.long == long {
+	if c.Lat == lat && c.Long == long {
 		return c
 	}
 	// Graph search order is Up Left Down Right
@@ -175,7 +185,10 @@ func (c *clientRegion) AddClient(client *Client) {
 	c.clients[client.ID] = client
 }
 
-func newClientRegion() (region *clientRegion) {
+func newClientRegion(lat, long float64) (region *clientRegion) {
+	region = new(clientRegion)
 	region.clients = make(map[string]*Client)
+	region.Lat = lat
+	region.Long = long
 	return
 }
