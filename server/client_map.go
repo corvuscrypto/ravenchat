@@ -92,8 +92,8 @@ func NewClientNetwork(root *clientRegion) (network *ClientNetwork) {
 	network.root = root
 	network.allRegions = []*clientRegion{root}
 
-	network.latRange = [2]float64{root.lat, root.lat + 1}
-	network.longRange = [2]float64{root.long, root.long + 1}
+	network.latRange = [2]float64{root.lat, root.lat + RegionArea}
+	network.longRange = [2]float64{root.long, root.long + RegionArea}
 
 	network.modificationMux = new(sync.Mutex)
 	return
