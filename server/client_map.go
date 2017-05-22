@@ -32,6 +32,7 @@ func (c *ClientWorld) mergeNetworks(networks []*ClientNetwork, lat, long float64
 	var rootNetRegion = networks[0].root.findClientRegion(lat, long)
 	for _, network := range networks[1:] {
 		region := network.root.findClientRegion(lat, long)
+
 		// merge the clients to the new root region
 		for id, client := range region.clients {
 			rootNetRegion.clients[id] = client
@@ -159,7 +160,7 @@ func (c *ClientNetwork) AddClient(client *Client) (connected bool) {
 			connected = true
 		}
 		if (region.Lat-lat) == -RegionArea && (region.Long-long) == 0 {
-			possibleRegionConnects[3] = region
+			possibleRegionConnects[2] = region
 			connected = true
 		}
 		if (region.Lat-lat) == 0 && (region.Long-long) == -RegionArea {
@@ -176,7 +177,7 @@ func (c *ClientNetwork) AddClient(client *Client) (connected bool) {
 		return
 	}
 
-	newRegion := newClientRegion(client.Lat, client.Long)
+	newRegion := newClientRegion(lat, long)
 	newRegion.AddClient(client)
 
 	for i, r := range possibleRegionConnects {
@@ -232,6 +233,12 @@ func NewClientNetwork(root *clientRegion) (network *ClientNetwork) {
 	go network.waitForMessages()
 
 	return
+}
+
+func (c *ClientNetwork) markAllRegionsUnvisited() {
+	for _, region := range c.allRegions {
+		region.visited = false
+	}
 }
 
 type clientRegion struct {
