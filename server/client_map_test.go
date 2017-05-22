@@ -47,3 +47,34 @@ func TestAddClientNewRegion(T *testing.T) {
 		T.Errorf("Unexpected rectangular boundary.")
 	}
 }
+
+func TestNetworkMerge(T *testing.T) {
+	world := new(ClientWorld)
+
+	client1 := NewClient(38.8, 40.2)
+	client1.ID = "A"
+
+	client2 := NewClient(38.8, 40.4)
+	client2.ID = "B"
+
+	net1 := NewClientNetwork(newClientRegion(38, 40))
+	net1.AddClient(client1)
+
+	net2 := NewClientNetwork(newClientRegion(37, 40))
+	net2.AddClient(client2)
+
+	addedRegion := net2.root.findClientRegion(38, 40)
+
+	// We have to manually mark all regions unvisited after the findClientRegion call
+	net2.markAllRegionsUnvisited()
+
+	world.mergeNetworks([]*ClientNetwork{net1, net2}, 38, 40)
+	//Ensure the net2 region was spliced out and can be GC'd
+	if addedRegion.Up != nil || addedRegion.Left != nil || addedRegion.Down != nil || addedRegion.Right != nil {
+		T.Errorf("Secondary Network's region was not spliced out")
+	}
+	//Ensure the clients were merged into the first net
+	if !(net1.root.clients["A"] == client1 && net1.root.clients["B"] == client2) {
+		T.Errorf("Merge did not successfully occur")
+	}
+}
