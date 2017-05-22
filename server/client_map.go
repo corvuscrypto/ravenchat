@@ -1,6 +1,9 @@
 package server
 
-import "math"
+import (
+	"math"
+	"time"
+)
 
 // RegionArea is the area (in coordinate degrees)
 const RegionArea = 1.0
@@ -18,6 +21,38 @@ type Client struct {
 	Long float64
 }
 
+// ClientWorld represents the entirety of server-managed networks and clients.
+// It is the first line in event handling
+type ClientWorld struct {
+	Networks  []ClientNetwork
+	eventChan chan NetworkEvent
+}
+
+func (c *ClientWorld) handleClientConnect(client *Client) {
+	//Code to handle client connect
+}
+
+func (c *ClientWorld) handleClientDisconnect(clientID string) {
+	//Code to handle client disconnect
+}
+
+// SendEvent is a convenience function
+func (c *ClientWorld) SendEvent(event NetworkEvent) {
+	c.eventChan <- event
+}
+
+func (c *ClientWorld) waitForEvents() {
+	for {
+		event := <-c.eventChan
+		switch t := event.Type(); t {
+		case EventClientConnect:
+			c.handleClientConnect(event.(ClientConnectionEvent).client)
+		case EventClientDisconnect:
+			c.handleClientDisconnect(event.(ClientDisconnectionEvent).clientID)
+		}
+	}
+}
+
 //NewClient creates a new client and returns its reference
 func NewClient(lat, long float64) (client *Client) {
 	client = new(Client)
@@ -28,30 +63,27 @@ func NewClient(lat, long float64) (client *Client) {
 
 //ClientNetwork is the representation of the Network of all client regions
 type ClientNetwork struct {
-	root       *clientRegion
-	allRegions []*clientRegion
-	latRange   [2]float64
-	longRange  [2]float64
-	eventChan  chan NetworkEvent
-}
-
-// SendEvent is a convenience method for passing off an event to a network
-func (c *ClientNetwork) SendEvent(n NetworkEvent) {
-	c.eventChan <- n
+	root        *clientRegion
+	allRegions  []*clientRegion
+	latRange    [2]float64
+	longRange   [2]float64
+	messageChan chan ClientMessageEvent
 }
 
 // To avoid the use of mux's use a channel to shuttle events into the network
 // This way we can perform operations without having to use locks
-func (c *ClientNetwork) waitForEvents() {
+func (c *ClientNetwork) waitForMessages() {
 	for {
-		event := <-c.eventChan
-		switch t := event.Type(); t {
-		case EventClientConnect:
-			c.AddClient(event.(ClientConnectionEvent).client)
-		case EventClientDisconnect:
-			break
-		case EventClientMessage:
-			break
+		event := <-c.messageChan
+		var aggregateMessages = []ClientMessageEvent{event}
+		var done bool
+		for !done {
+			select {
+			case e := <-c.messageChan:
+				aggregateMessages = append(aggregateMessages, e)
+			case <-time.Tick(1 * time.Microsecond):
+				done = true
+			}
 		}
 	}
 }
@@ -132,9 +164,9 @@ func NewClientNetwork(root *clientRegion) (network *ClientNetwork) {
 	network.latRange = [2]float64{root.Lat, root.Lat + RegionArea}
 	network.longRange = [2]float64{root.Long, root.Long + RegionArea}
 
-	network.eventChan = make(chan NetworkEvent, EventBufferSize)
+	network.messageChan = make(chan ClientMessageEvent, EventBufferSize)
 
-	go network.waitForEvents()
+	go network.waitForMessages()
 
 	return
 }
