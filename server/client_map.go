@@ -24,12 +24,56 @@ type Client struct {
 // ClientWorld represents the entirety of server-managed networks and clients.
 // It is the first line in event handling
 type ClientWorld struct {
-	Networks  []ClientNetwork
+	Networks  []*ClientNetwork
 	eventChan chan NetworkEvent
+}
+
+func (c *ClientWorld) mergeNetworks(networks []*ClientNetwork, lat, long float64) {
+	var rootNetRegion = networks[0].root.findClientRegion(lat, long)
+	for _, network := range networks[1:] {
+		region := network.root.findClientRegion(lat, long)
+		// merge the clients to the new root region
+		for id, client := range region.clients {
+			rootNetRegion.clients[id] = client
+		}
+
+		// Now splice out the node
+		if region.Up != nil {
+			rootNetRegion.Up = region.Up
+			region.Up.Down = rootNetRegion
+			region.Up = nil
+		}
+		if region.Left != nil {
+			rootNetRegion.Left = region.Left
+			region.Left.Right = rootNetRegion
+			region.Left = nil
+		}
+		if region.Down != nil {
+			rootNetRegion.Down = region.Down
+			region.Down.Up = rootNetRegion
+			region.Down = nil
+		}
+		if region.Right != nil {
+			rootNetRegion.Right = region.Right
+			region.Right.Left = rootNetRegion
+			region.Right = nil
+		}
+	}
 }
 
 func (c *ClientWorld) handleClientConnect(client *Client) {
 	//Code to handle client connect
+	var connectedNetworks []*ClientNetwork
+	for _, network := range c.Networks {
+		if network.possiblyContains(client) {
+			if network.AddClient(client) {
+				connectedNetworks = append(connectedNetworks, network)
+			}
+		}
+	}
+	if len(connectedNetworks) > 1 {
+		c.mergeNetworks(connectedNetworks, math.Floor(client.Lat), math.Floor(client.Long))
+	}
 }
 
 func (c *ClientWorld) handleClientDisconnect(clientID string) {
@@ -68,6 +112,11 @@ type ClientNetwork struct {
 	latRange    [2]float64
 	longRange   [2]float64
 	messageChan chan ClientMessageEvent
+}
+
+func (c *ClientNetwork) possiblyContains(client *Client) bool {
+	return (client.Lat >= c.latRange[0] && client.Lat < c.latRange[1] &&
+		client.Long >= c.longRange[0] && client.Long < c.longRange[1])
 }
 
 // To avoid the use of mux's use a channel to shuttle events into the network
