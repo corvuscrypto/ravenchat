@@ -41,4 +41,9 @@ func TestAddClientNewRegion(T *testing.T) {
 	if numRegions := len(network.allRegions); numRegions != 2 {
 		T.Errorf("Unexpected number of clients in region. Expected %d, Got %d", 2, numRegions)
 	}
+
+	//Ensure that the bounds have updated on the network instance
+	if !(network.latRange == [2]float64{40, 41} && network.longRange == [2]float64{38, 40}) {
+		T.Errorf("Unexpected rectangular boundary.")
+	}
 }

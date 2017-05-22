@@ -152,6 +152,20 @@ func (c *ClientNetwork) AddClient(client *Client) (connected bool) {
 
 	// Append the region to the region array
 	c.allRegions = append(c.allRegions, newRegion)
+
+	// Also update our rectangular boundary
+	if newRegion.Lat == c.latRange[1] {
+		c.latRange[1]++
+	}
+	if newRegion.Lat < c.latRange[0] {
+		c.latRange[0]--
+	}
+	if newRegion.Long == c.longRange[1] {
+		c.longRange[1]++
+	}
+	if newRegion.Long == c.longRange[0] {
+		c.longRange[0]--
+	}
 	return
 }
 
