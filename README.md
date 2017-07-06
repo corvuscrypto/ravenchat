@@ -7,7 +7,8 @@ regions joined end-to-end be split by removal of the region in the middle, the t
 
 This fun little concept is something I had been sitting on for a while and I think it will be a fun concept to code
 since it involves a bit of graph theory (mostly basic stuff) and the concept should prove fun as a general means of
-communication. Furthermore it improves my lock-free programming skills which is also a plus yo.
+communication. I was gonna practice some lock-free programming also but then decided to just go with channels instead for
+queueing events. Oh well. 
 
 # client addition
 We add clients in a pipeline format. The addition of a client is as follows:
