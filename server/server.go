@@ -1,13 +1,17 @@
 package server
 
-import "net"
+import (
+	"net"
+
+	"github.com/corvuscrypto/ravenchat/network"
+)
 
 type Server struct {
 	ID       string
 	Listener net.Listener
-	networks []*ClientNetwork
+	networks []*network.ClientNetwork
 }
 
-func (s *Server) newClient(client *Client) {
+func (s *Server) newClient(client *network.Client) {
 
 }

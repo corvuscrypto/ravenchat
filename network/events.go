@@ -1,4 +1,4 @@
-package server
+package network
 
 // NetworkEventType is to distinguish the types of events for specific handling
 // of said events
